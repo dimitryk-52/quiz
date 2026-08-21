@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0d0f16">
+<title>Квиз</title>
+<link rel="icon" href="img/logo.png">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="top">
+  <img class="logo" src="img/logo.png" alt="Логотип квиза">
+  <div class="top-right">
+    <div class="round" id="round-label">РАУНД —</div>
+    <div class="link" id="link-indicator" data-state="offline">нет связи</div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- Блок команды: обычное состояние -->
+  <section class="team-view" id="team-view" hidden>
+    <span class="team-name" id="team-name"></span>
+    <button class="team-edit" id="team-edit" type="button" aria-label="Изменить команду">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 000-1.41l-2.34-2.34a1 1 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+      </svg>
+    </button>
+  </section>
+
+  <!-- Блок команды: первый вход / переименование / переключение -->
+  <section class="team-edit-screen" id="team-edit-screen" hidden>
+    <h2 class="team-edit-title" id="team-edit-title">Название команды</h2>
+
+    <!-- Крупно показываем, какая команда правится: страховка от того,
+         чтобы случайно не переименовать соперника -->
+    <div class="team-edit-current" id="team-edit-current" hidden></div>
+
+    <div class="team-edit-row">
+      <input class="team-input" id="team-input" type="text"
+             placeholder="Введите название команды"
+             autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+      <button class="btn" id="team-submit" type="button">ОК</button>
+    </div>
+
+    <div class="team-error" id="team-error"></div>
+    <button class="btn-ghost" id="team-cancel" type="button" hidden>Отмена</button>
+
+    <div class="team-list-hint" id="team-list-hint"></div>
+    <div class="team-list" id="team-list"></div>
+  </section>
+
+  <div class="state-note" id="state-note" hidden>Ожидайте…</div>
+
+  <section class="questions" id="questions"></section>
+
+</main>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
