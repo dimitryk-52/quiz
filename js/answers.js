@@ -13,8 +13,10 @@ const REASONS = {
 
 const rows = new Map(); // number -> { input, button, accepted, status, retry }
 let formEnabled = false;
+let list = null; // .questions — на нём висит класс закрытого приёма
 
 export function buildQuestions(container) {
+  list = container;
   container.innerHTML = '';
 
   for (let n = 1; n <= QUESTIONS; n++) {
@@ -60,8 +62,11 @@ export function buildQuestions(container) {
 }
 
 // Раунд открыт → поля активны; закрыт → всё disabled.
+// Класс is-locked гасит поля целиком: disabled-атрибут сам по себе
+// на телефоне читается плохо, и капитан не понимает, почему не печатается.
 export function setEnabled(on) {
   formEnabled = on;
+  list?.classList.toggle('is-locked', !on);
   for (const els of rows.values()) {
     els.input.disabled = !on;
     els.button.disabled = !on;

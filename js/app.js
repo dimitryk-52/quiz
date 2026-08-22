@@ -8,6 +8,7 @@ const roundLabel = document.getElementById('round-label');
 const stateNote = document.getElementById('state-note');
 const link = document.getElementById('link-indicator');
 
+initTheme();
 buildQuestions(document.getElementById('questions'));
 
 initTeam({
@@ -58,13 +59,53 @@ function render() {
   } else if (!status.round) {
     note('Игра ещё не началась');
   } else if (!status.open) {
-    note(`Приём ответов закрыт`);
+    note('Приём ответов закрыт', 'closed');
   } else {
-    note('');
+    // Раньше при открытом приёме плашка просто пропадала, и «открыт»
+    // приходилось выводить из того, что поля стали активны.
+    note('Приём ответов открыт', 'open');
   }
 }
 
-function note(text) {
+function note(text, kind = '') {
   stateNote.textContent = text;
   stateNote.hidden = !text;
+  if (kind) stateNote.dataset.kind = kind;
+  else delete stateNote.dataset.kind;
+}
+
+// --- Тема ---------------------------------------------------------
+// По умолчанию тёмная: играют в полутёмном зале. Выбор запоминается,
+// переключатель — в шапке рядом с индикатором связи.
+
+const THEME_KEY = 'quiz.theme';
+
+function initTheme() {
+  applyTheme(currentTheme());
+  document.getElementById('theme-toggle').addEventListener('click', () => {
+    const next = currentTheme() === 'light' ? 'dark' : 'light';
+    try {
+      localStorage.setItem(THEME_KEY, next);
+    } catch {
+      /* приватный режим — тема доживёт до перезагрузки */
+    }
+    applyTheme(next);
+  });
+}
+
+function currentTheme() {
+  return document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
+}
+
+function applyTheme(theme) {
+  document.documentElement.dataset.theme = theme;
+
+  const btn = document.getElementById('theme-toggle');
+  // Подпись — то, куда переключимся, а не то, что сейчас.
+  btn.textContent = theme === 'light' ? '☾' : '☀';
+  btn.title = theme === 'light' ? 'Тёмная тема' : 'Светлая тема';
+
+  // Заодно перекрашиваем строку состояния браузера на телефоне.
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.content = theme === 'light' ? '#f2f4f8' : '#0d0f16';
 }

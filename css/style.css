@@ -1,38 +1,56 @@
 /* ===========================================================
    Публичная страница. Mobile-first, резиновая вёрстка.
+
+   Две темы. По умолчанию — тёмная (:root): квиз играется в
+   полутёмном зале, светлый экран в лицо соседу никому не нужен.
+   Светлая включается атрибутом data-theme="light" на <html>,
+   выбор живёт в localStorage.
    =========================================================== */
 
+/* Метрики Giga Sans несимметричны (hhea 1000/-300 против typo 700/-300
+   плюс выставленный USE_TYPO_METRICS): Chrome берёт одни, Safari другие,
+   и в Safari текст сидит в строке заметно выше центра. Переопределяем
+   метрики руками — бокс 1.2em, базовая линия на 0.9em: capHeight и
+   x-height оказываются симметрично вокруг центра строки, и текст
+   центрируется по вертикали одинаково во всех браузерах. */
 @font-face {
   font-family: 'Giga Sans';
   src: url('../fonts/GigaSans-Regular.otf') format('opentype');
   font-weight: 400; font-style: normal; font-display: swap;
+  ascent-override: 90%; descent-override: 30%; line-gap-override: 0%;
 }
 @font-face {
   font-family: 'Giga Sans';
   src: url('../fonts/GigaSans-Medium.otf') format('opentype');
   font-weight: 500; font-style: normal; font-display: swap;
+  ascent-override: 90%; descent-override: 30%; line-gap-override: 0%;
 }
 @font-face {
   font-family: 'Giga Sans';
   src: url('../fonts/GigaSans-SemiBold.otf') format('opentype');
   font-weight: 600; font-style: normal; font-display: swap;
+  ascent-override: 90%; descent-override: 30%; line-gap-override: 0%;
 }
 @font-face {
   font-family: 'Giga Sans';
   src: url('../fonts/GigaSans-Bold.otf') format('opentype');
   font-weight: 700; font-style: normal; font-display: swap;
+  ascent-override: 90%; descent-override: 30%; line-gap-override: 0%;
 }
 @font-face {
   font-family: 'Giga Sans';
   src: url('../fonts/GigaSans-ExtraBold.otf') format('opentype');
   font-weight: 800; font-style: normal; font-display: swap;
+  ascent-override: 90%; descent-override: 30%; line-gap-override: 0%;
 }
 @font-face {
   font-family: 'Giga Sans';
   src: url('../fonts/GigaSans-Black.otf') format('opentype');
   font-weight: 900; font-style: normal; font-display: swap;
+  ascent-override: 90%; descent-override: 30%; line-gap-override: 0%;
 }
 
+/* --- Тёмная тема (по умолчанию) --- */
 :root {
   --bg: #0d0f16;
   --card: #171a25;
@@ -40,19 +58,58 @@
   --line: #2b3042;
   --text: #f2f4f8;
   --muted: #9aa3b8;
+
   --accent: #6c8cff;
+  --accent-ink: #0d0f16;
+
   --ok: #34d17f;
+  --ok-wash: rgba(52, 209, 127, 0.12);
+  --ok-line: rgba(52, 209, 127, 0.35);
+
   --err: #ff6b6b;
+  --warn: #f0b429;
+  --warn-wash: rgba(240, 180, 41, 0.1);
+  --warn-line: rgba(240, 180, 41, 0.35);
+
   --radius: 14px;
 }
 
+/* --- Светлая тема ---
+   Акценты пересчитаны под белую карточку: контраст к #fff у каждого
+   не ниже 5:1, у белого текста на синей плашке — 6.4:1. */
+:root[data-theme='light'] {
+  --bg: #f2f4f8;
+  --card: #ffffff;
+  --card-2: #eef0f4;
+  --line: #d8dde6;
+  --text: #171a21;
+  --muted: #5f6878;
+
+  --accent: #3b4fd8;        /* 6.4:1 на белом */
+  --accent-ink: #ffffff;
+
+  --ok: #0f7a52;            /* 5.4:1 на белом */
+  --ok-wash: rgba(15, 122, 82, 0.09);
+  --ok-line: rgba(15, 122, 82, 0.4);
+
+  --err: #b42318;           /* 6.6:1 на белом */
+  --warn: #8a5a00;          /* 5.9:1 на белом */
+  --warn-wash: rgba(138, 90, 0, 0.08);
+  --warn-line: rgba(138, 90, 0, 0.35);
+}
+
 * { box-sizing: border-box; }
+
+/* Авторский display побеждает [hidden] из UA-стилей, а скрывать через
+   атрибут hidden тут умеет почти каждый блок. Одно правило на всех. */
+[hidden] { display: none !important; }
 
 html, body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
   font-family: 'Giga Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  line-height: 1.35;
   -webkit-text-size-adjust: 100%;
 }
 
@@ -60,14 +117,18 @@ body {
   padding-bottom: env(safe-area-inset-bottom);
 }
 
-/* --- Шапка --- */
+/* --- Шапка ---
+   Три зоны: логотип, раунд, служебное. Крайние колонки одинаковой
+   ширины (1fr), иначе раунд съезжает с центра экрана. */
 
 .top {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 12px 16px calc(12px + env(safe-area-inset-top));
+  gap: 10px;
+  /* Вырез экрана добавляем только сверху: в шорткате padding он
+     попадал ещё и в нижний отступ и приподнимал всё содержимое. */
+  padding: 12px 16px;
   padding-top: calc(12px + env(safe-area-inset-top));
   background: var(--card);
   border-bottom: 1px solid var(--line);
@@ -76,33 +137,62 @@ body {
   z-index: 10;
 }
 
-.logo { height: 40px; width: auto; display: block; }
+.logo { height: 40px; width: auto; max-width: 100%; display: block; }
 
-.top-right { text-align: right; }
-
+/* Главное на экране: номер раунда игрок должен считывать не вчитываясь */
 .round {
-  font-weight: 800;
-  font-size: 18px;
-  letter-spacing: 0.04em;
+  grid-column: 2;
+  text-align: center;
+  font-weight: 900;
+  /* На узком экране ужимается, чтобы не выдавить логотип и связь */
+  font-size: clamp(20px, 6.4vw, 26px);
+  line-height: 1;
+  letter-spacing: 0.02em;
   white-space: nowrap;
 }
 
-.link {
-  font-size: 12px;
+.top-right {
+  grid-column: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.theme-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px; height: 32px;
+  font-family: inherit;
+  font-size: 15px;
+  line-height: 1;
   color: var(--muted);
-  margin-top: 2px;
+  background: var(--card-2);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  cursor: pointer;
+}
+.theme-btn:active { background: var(--line); }
+
+.link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  line-height: 1.2;
+  color: var(--muted);
+  text-align: right;
 }
 .link::before {
   content: '';
-  display: inline-block;
+  flex: none;
   width: 7px; height: 7px;
   border-radius: 50%;
   background: var(--muted);
-  margin-right: 5px;
-  vertical-align: middle;
 }
 .link[data-state='live']::before { background: var(--ok); }
-.link[data-state='reconnecting']::before { background: #f0b429; }
+.link[data-state='reconnecting']::before { background: var(--warn); }
 .link[data-state='offline']::before { background: var(--err); }
 
 /* --- Общий контейнер --- */
@@ -116,7 +206,9 @@ body {
   gap: 16px;
 }
 
-/* --- Блок команды --- */
+/* --- Блок команды ---
+   Шрифт меньше, чем у раунда: своё название команда и так знает,
+   а раунд надо считывать с первого взгляда. */
 
 .team-view {
   display: flex;
@@ -125,18 +217,21 @@ body {
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  padding: 14px 16px;
+  padding: 12px 14px;
 }
 
 .team-name {
-  font-size: 20px;
-  font-weight: 700;
+  font-size: 16px;
+  font-weight: 600;
   overflow-wrap: anywhere;
 }
 
 .team-edit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex: none;
-  width: 36px; height: 36px;
+  width: 34px; height: 34px;
   margin-left: auto;
   border: none;
   border-radius: 10px;
@@ -144,7 +239,9 @@ body {
   color: var(--muted);
   cursor: pointer;
 }
-.team-edit svg { width: 18px; height: 18px; fill: currentColor; }
+/* display:block — иначе svg стоит на базовой линии строки кнопки
+   и визуально уезжает вверх. То же у всех иконок ниже. */
+.team-edit svg { display: block; width: 18px; height: 18px; fill: currentColor; }
 .team-edit:active { background: var(--line); }
 
 .team-edit-screen {
@@ -185,33 +282,42 @@ body {
   min-width: 0;
 }
 
+/* Высота фиксированная, паддинг только по горизонтали: вертикаль
+   держит line-height, и текст стоит ровно в середине поля. */
 .team-input,
 .q-input {
   /* не меньше 16px — иначе iOS Safari зумит страницу при фокусе */
   font-size: 16px;
   font-family: inherit;
+  line-height: 1.2;
+  height: 46px;
   color: var(--text);
   background: var(--card-2);
   border: 1px solid var(--line);
   border-radius: 10px;
-  padding: 12px;
+  padding: 0 12px;
 }
+.team-input::placeholder, .q-input::placeholder { color: var(--muted); opacity: 1; }
 .team-input:focus, .q-input:focus {
   outline: none;
   border-color: var(--accent);
 }
-.q-input:disabled { opacity: 0.45; }
 
 .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex: none;
+  height: 46px;
   font-family: inherit;
   font-size: 16px;
   font-weight: 700;
-  color: #0d0f16;
+  line-height: 1;
+  color: var(--accent-ink);
   background: var(--accent);
   border: none;
   border-radius: 10px;
-  padding: 12px 18px;
+  padding: 0 18px;
   cursor: pointer;
 }
 .btn:disabled { opacity: 0.6; }
@@ -247,13 +353,17 @@ body {
 }
 
 .team-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
   font-family: inherit;
   font-size: 15px;
+  line-height: 1.2;
   color: var(--text);
   background: var(--card-2);
   border: 1px solid var(--line);
   border-radius: 999px;
-  padding: 9px 14px;
+  padding: 6px 14px;
   cursor: pointer;
   max-width: 100%;
   overflow-wrap: anywhere;
@@ -261,16 +371,40 @@ body {
 .team-chip.is-current { border-color: var(--accent); color: var(--accent); }
 .team-chip:active { background: var(--line); }
 
-/* --- Состояние страницы --- */
+/* --- Состояние страницы ---
+   Открыт приём или закрыт — вопрос номер один для игрока, поэтому
+   не серая строчка, а цветная плашка с точкой и рамкой. */
 
 .state-note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   text-align: center;
-  color: var(--muted);
   font-size: 15px;
+  font-weight: 600;
+  color: var(--muted);
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  padding: 12px;
+  padding: 13px 14px;
+}
+.state-note::before {
+  content: '';
+  flex: none;
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.state-note[data-kind='open'] {
+  color: var(--ok);
+  background: var(--ok-wash);
+  border-color: var(--ok-line);
+}
+.state-note[data-kind='closed'] {
+  color: var(--warn);
+  background: var(--warn-wash);
+  border-color: var(--warn-line);
 }
 
 /* --- Вопросы --- */
@@ -286,6 +420,7 @@ body {
   border: 1px solid var(--line);
   border-radius: var(--radius);
   padding: 12px;
+  transition: opacity 0.18s ease, background-color 0.18s ease;
 }
 
 .q-line {
@@ -295,6 +430,8 @@ body {
 }
 
 .q-num {
+  display: flex;
+  align-items: center;
   flex: none;
   width: 26px;
   font-weight: 700;
@@ -305,19 +442,33 @@ body {
 .q-input { flex: 1 1 auto; min-width: 0; }
 
 .q-send {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex: none;
   width: 46px; height: 46px;
   border: none;
   border-radius: 10px;
   background: var(--accent);
-  color: #0d0f16;
+  color: var(--accent-ink);
   cursor: pointer;
 }
-.q-send svg { width: 20px; height: 20px; fill: currentColor; }
-.q-send:disabled { opacity: 0.4; }
+.q-send svg { display: block; width: 20px; height: 20px; fill: currentColor; }
 .q-send.is-loading svg { animation: pulse 0.8s ease-in-out infinite; }
 
 @keyframes pulse { 50% { opacity: 0.3; } }
+
+/* Приём закрыт: поле ввода и кнопка гаснут целиком, карточка теряет
+   заливку и садится на фон страницы. Принятый ответ остаётся в полную
+   яркость — ради него экран и открывают после закрытия раунда.
+   Класс вешает answers.js, состояние одно на весь список. */
+.questions.is-locked .q {
+  background: transparent;
+  border-style: dashed;
+}
+.questions.is-locked .q-line { opacity: 0.3; }
+.questions.is-locked .q-accepted,
+.questions.is-locked .q-status { opacity: 1; }
 
 .q-accepted {
   margin: 8px 0 0 34px;
@@ -326,7 +477,7 @@ body {
   overflow-wrap: anywhere;
 }
 .q-accepted-label { color: var(--muted); }
-.q-accepted-text { color: var(--ok); font-weight: 600; }
+.q-accepted-text { color: var(--ok); font-weight: 700; }
 
 .q-status {
   margin: 6px 0 0 34px;
@@ -354,6 +505,7 @@ body {
 
 @media (min-width: 720px) {
   .logo { height: 48px; }
-  .round { font-size: 22px; }
+  .round { font-size: 34px; }
+  .team-name { font-size: 18px; }
   .wrap { padding: 24px 16px 48px; }
 }

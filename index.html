@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ru">
+<html lang="ru" data-theme="dark">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -7,13 +7,29 @@
 <title>Квиз</title>
 <link rel="icon" href="img/logo.png">
 <link rel="stylesheet" href="css/style.css">
+<!-- Тема выставляется до первой отрисовки: иначе телефон успевает
+     мигнуть тёмным экраном при светлой теме. По умолчанию тёмная —
+     квиз играется в полутёмном зале. -->
+<script>
+  try {
+    var t = localStorage.getItem('quiz.theme');
+    document.documentElement.dataset.theme = t === 'light' ? 'light' : 'dark';
+    var m = document.querySelector('meta[name="theme-color"]');
+    if (m) m.content = t === 'light' ? '#f2f4f8' : '#0d0f16';
+  } catch (e) { /* localStorage заблокирован — остаёмся на тёмной */ }
+</script>
 </head>
 <body>
 
 <header class="top">
   <img class="logo" src="img/logo.png" alt="Логотип квиза">
+
+  <!-- Раунд — главное, что игрок должен считывать с экрана: центр и крупно -->
+  <div class="round" id="round-label">РАУНД —</div>
+
   <div class="top-right">
-    <div class="round" id="round-label">РАУНД —</div>
+    <button class="theme-btn" id="theme-toggle" type="button"
+            title="Переключить тему" aria-label="Переключить тему"></button>
     <div class="link" id="link-indicator" data-state="offline">нет связи</div>
   </div>
 </header>
