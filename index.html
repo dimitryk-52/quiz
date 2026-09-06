@@ -7,15 +7,35 @@
 <title>Квиз</title>
 <link rel="icon" href="img/logo.png">
 <link rel="stylesheet" href="css/style.css">
-<!-- Тема выставляется до первой отрисовки: иначе телефон успевает
-     мигнуть тёмным экраном при светлой теме. По умолчанию тёмная —
-     квиз играется в полутёмном зале. -->
+<!-- Оформления игр. Каждый файл включается своим data-skin на <html>
+     и без него не делает ничего, поэтому подключены всегда. Какое
+     оформление показать, решает поле theme идущей игры (выбирается
+     в хабе при создании) — ставит атрибут app.js. -->
+<link rel="stylesheet" href="css/by.css">
+<!-- Тема и оформление выставляются до первой отрисовки: иначе телефон
+     успевает мигнуть тёмным экраном при светлой теме, а на белорусском
+     квизе — ещё и стандартной страницей, пока идёт запрос к базе.
+     По умолчанию тёмная — квиз играется в полутёмном зале.
+
+     Оформление здесь берётся из прошлого сеанса и потому лишь
+     предположение; настоящее придёт с конфигурацией игры, и app.js
+     поправит атрибут. Поэтому же имя проверяем регулярным выражением:
+     в localStorage может лежать что угодно. -->
 <script>
   try {
     var t = localStorage.getItem('quiz.theme');
     document.documentElement.dataset.theme = t === 'light' ? 'light' : 'dark';
+
+    var s = localStorage.getItem('quiz.skin');
+    if (s && s !== 'standard' && /^[a-z][a-z0-9-]{0,19}$/.test(s)) {
+      document.documentElement.dataset.skin = s;
+    }
+
+    // Цвет строки состояния берём из --bg, а не списком литералов:
+    // иначе он врёт при каждой смене и палитры, и оформления.
     var m = document.querySelector('meta[name="theme-color"]');
-    if (m) m.content = t === 'light' ? '#f2f4f8' : '#0d0f16';
+    var bg = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
+    if (m && bg) m.content = bg;
   } catch (e) { /* localStorage заблокирован — остаёмся на тёмной */ }
 </script>
 </head>
@@ -24,8 +44,16 @@
 <header class="top">
   <img class="logo" src="img/logo.png" alt="Логотип квиза">
 
-  <!-- Раунд — главное, что игрок должен считывать с экрана: центр и крупно -->
-  <div class="round" id="round-label">РАУНД —</div>
+  <!-- Раунд — главное, что игрок должен считывать с экрана: центр и крупно.
+       Под ним название раунда («МЕТАЛЛ»): ведущий объявляет тему голосом,
+       и на экране она должна совпадать с услышанным. Ниже — название игры:
+       команды играют несколько квизов подряд с одного телефона,
+       и «не тот квиз на экране» — реальный сценарий. -->
+  <div class="round-box">
+    <div class="round" id="round-label">РАУНД —</div>
+    <div class="round-name" id="round-name" hidden></div>
+    <div class="game-label" id="game-label" hidden></div>
+  </div>
 
   <div class="top-right">
     <button class="theme-btn" id="theme-toggle" type="button"

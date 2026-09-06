@@ -139,13 +139,16 @@ body {
 
 .logo { height: 40px; width: auto; max-width: 100%; display: block; }
 
-/* Главное на экране: номер раунда игрок должен считывать не вчитываясь */
+/* Главное на экране: номер раунда игрок должен считывать не вчитываясь.
+   Чуть мельче, чем было (6.4vw / 26px): под номером теперь стоит
+   название раунда, и шапку из-за него растить не хочется — она
+   sticky и ест высоту на всех экранах сразу. */
 .round {
   grid-column: 2;
   text-align: center;
   font-weight: 900;
   /* На узком экране ужимается, чтобы не выдавить логотип и связь */
-  font-size: clamp(20px, 6.4vw, 26px);
+  font-size: clamp(17px, 5.4vw, 22px);
   line-height: 1;
   letter-spacing: 0.02em;
   white-space: nowrap;
@@ -505,7 +508,112 @@ body {
 
 @media (min-width: 720px) {
   .logo { height: 48px; }
-  .round { font-size: 34px; }
+  .round { font-size: 28px; }
   .team-name { font-size: 18px; }
   .wrap { padding: 24px 16px 48px; }
+}
+
+/* ===========================================================
+   Игра и ставки
+   =========================================================== */
+
+/* Раунд переехал в обёртку вместе с названием игры — колонку сетки
+   теперь занимает она, иначе шапка разъезжается. */
+.round-box {
+  grid-column: 2;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.round-box .round { grid-column: auto; }
+
+/* Ставочный раунд виден уже по заголовку: команда должна понимать,
+   что происходит, ещё до того как долистает до галочек. */
+.round.is-bet { color: var(--warn); }
+
+/* Название раунда: ведущий объявляет тему голосом, и на экране она
+   должна совпадать с услышанным. Стоит между номером и названием игры —
+   номер крупнее, игра мельче, порядок чтения сверху вниз. */
+.round-name {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  line-height: 1.1;
+  text-align: center;
+  max-width: 52vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.round-name.is-bet { color: var(--warn); }
+
+.game-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  text-align: center;
+  max-width: 44vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.state-note[data-kind='bet'] {
+  color: var(--warn);
+  background: var(--warn-wash);
+  border-color: var(--warn-line);
+}
+
+/* --- Галочка ставки --- */
+
+/* Отдельной строкой под полем, а не в одном ряду с кнопкой отправки:
+   на телефоне это зона большого пальца, и промах по чекбоксу рядом
+   с «отправить» стоил бы команде балла. */
+.q-bet {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 10px 0 0 34px;
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font-size: 14px;
+  color: var(--muted);
+  cursor: pointer;
+  /* палец, а не курсор: цель должна быть крупной */
+  min-height: 40px;
+  user-select: none;
+  transition: color 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+}
+.q-bet input {
+  width: 20px; height: 20px;
+  margin: 0;
+  flex: none;
+  accent-color: var(--warn);
+  cursor: pointer;
+}
+.q-bet-text b { font-weight: 800; }
+
+.q.has-bet .q-bet {
+  color: var(--warn);
+  border-color: var(--warn-line);
+  background: var(--warn-wash);
+  font-weight: 700;
+}
+
+/* Поставленная ставка должна быть заметна и когда карточка свёрнута
+   вниманием: подсвечиваем всю карточку рамкой. */
+.q.has-bet { border-color: var(--warn-line); }
+
+/* Приём закрыт — галочка гаснет вместе с полем ввода, но остаётся
+   читаемой: команда сверяет, на что поставила. */
+.questions.is-locked .q-bet { opacity: 0.55; cursor: default; }
+.questions.is-locked .q-bet input { cursor: default; }
+
+@media (min-width: 720px) {
+  .round-name { font-size: 16px; max-width: 40vw; }
+  .game-label { font-size: 13px; max-width: 32vw; }
 }

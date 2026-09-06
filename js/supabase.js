@@ -49,6 +49,20 @@ export async function renameTeam(teamId, name) {
   return data; // { ok, id, name } | { ok: false, reason: 'name_taken' | ... }
 }
 
+// --- Ставки ----------------------------------------------------
+
+// Раунд, игра и «а ставочный ли это раунд» проверяются на сервере:
+// галочку в разметке подделать нечего делать.
+export async function setBet(teamId, questionNumber, on) {
+  const { data, error } = await sb.rpc('set_bet', {
+    p_team_id: teamId,
+    p_question_number: questionNumber,
+    p_on: on,
+  });
+  if (error) throw error;
+  return data; // { ok: true, round, question, bet } | { ok: false, reason }
+}
+
 // --- Ответы ----------------------------------------------------
 
 export async function submitAnswer(teamId, questionNumber, text) {
@@ -64,15 +78,30 @@ export async function submitAnswer(teamId, questionNumber, text) {
 export async function getMyAnswers(teamId) {
   const { data, error } = await sb.rpc('get_my_answers', { p_team_id: teamId });
   if (error) throw error;
-  return data; // { ok: true, round, answers: { "1": "...", ... } }
+  // { ok: true, round, answers: { "1": "..." }, bets: { "1": true } }
+  // | { ok: false, reason: 'other_game' | 'unknown_team' | 'no_status' }
+  return data;
 }
 
-// --- Статус ----------------------------------------------------
+// --- Статус и игра ---------------------------------------------
 
+// Одним вызовом: и статус, и конфигурация идущей игры. Двумя запросами
+// между ними успевает вклиниться смена раунда, и страница показала бы
+// раунд от одной игры со ставками от другой.
+export async function fetchCurrentGame() {
+  const { data, error } = await sb.rpc('get_current_game');
+  if (error) throw error;
+  // { ok, game: { id, title, rounds, bet_rounds } | null,
+  //   round, is_open, is_bet_round }
+  return data;
+}
+
+// Сырая строка status — для сверки после события Realtime, когда игра
+// не менялась и перечитывать её конфигурацию незачем.
 export async function fetchStatus() {
   const { data, error } = await sb
     .from('status')
-    .select('round_number, is_open')
+    .select('game_id, round_number, is_open')
     .eq('id', 1)
     .maybeSingle();
   if (error) throw error;

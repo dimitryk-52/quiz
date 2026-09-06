@@ -1,7 +1,8 @@
-// 12 блоков вопросов: отправка, строка «Принятый ответ», статусы ошибок.
+// 12 блоков вопросов: отправка, ставка, строка «Принятый ответ»,
+// статусы ошибок.
 
 import { QUESTIONS } from './config.js';
-import { submitAnswer, getMyAnswers } from './supabase.js';
+import { submitAnswer, getMyAnswers, setBet } from './supabase.js';
 import { team } from './team.js';
 
 const REASONS = {
@@ -9,11 +10,21 @@ const REASONS = {
   empty: 'Пустой ответ',
   bad_question: 'Ошибка номера вопроса',
   unknown_team: 'Команда не найдена',
+  other_game: 'Началась другая игра — выберите команду заново',
+  not_bet_round: 'В этом раунде ставок нет',
 };
 
-const rows = new Map(); // number -> { input, button, accepted, status, retry }
+const rows = new Map(); // number -> элементы строки вопроса
 let formEnabled = false;
+let betMode = false; // идёт ли раунд со ставкой
 let list = null; // .questions — на нём висит класс закрытого приёма
+
+// Сообщить наверх, что база больше не считает нашу команду своей.
+// Ставится из app.js: answers.js про экран выбора команды не знает.
+let onTeamRejected = () => {};
+export function onTeamGone(fn) {
+  onTeamRejected = fn ?? (() => {});
+}
 
 export function buildQuestions(container) {
   list = container;
@@ -32,6 +43,10 @@ export function buildQuestions(container) {
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 20l18-8L3 4v6l12 2-12 2z"/></svg>
         </button>
       </div>
+      <label class="q-bet" hidden>
+        <input type="checkbox" class="q-bet-box" disabled>
+        <span class="q-bet-text">Ставка <b>+1</b></span>
+      </label>
       <div class="q-accepted" hidden><span class="q-accepted-label">Принятый ответ:</span> <span class="q-accepted-text"></span></div>
       <div class="q-status" hidden><span class="q-status-text"></span><button type="button" class="q-retry" hidden>повторить</button></div>
     `;
@@ -41,6 +56,8 @@ export function buildQuestions(container) {
       root: row,
       input: row.querySelector('.q-input'),
       button: row.querySelector('.q-send'),
+      bet: row.querySelector('.q-bet'),
+      betBox: row.querySelector('.q-bet-box'),
       accepted: row.querySelector('.q-accepted'),
       acceptedText: row.querySelector('.q-accepted-text'),
       status: row.querySelector('.q-status'),
@@ -58,6 +75,7 @@ export function buildQuestions(container) {
       }
     });
     els.retry.addEventListener('click', () => send(n));
+    els.betBox.addEventListener('change', () => sendBet(n));
   }
 }
 
@@ -70,20 +88,42 @@ export function setEnabled(on) {
   for (const els of rows.values()) {
     els.input.disabled = !on;
     els.button.disabled = !on;
+    els.betBox.disabled = !on || !betMode;
   }
 }
 
-// Переход на следующий раунд: чистим и инпуты, и «Принятый ответ».
+// Ставочный раунд: у каждого вопроса появляется своя галочка.
+// Ограничения по числу ставок нет — команда вправе поставить хоть на все.
+export function setBetMode(on) {
+  betMode = on === true;
+  list?.classList.toggle('is-bet', betMode);
+  for (const els of rows.values()) {
+    els.bet.hidden = !betMode;
+    els.betBox.disabled = !formEnabled || !betMode;
+    if (!betMode) {
+      els.betBox.checked = false;
+      els.root.classList.remove('has-bet');
+    } else {
+      // Галочку мог восстановить restoreAccepted ещё до того, как стало
+      // известно, что раунд ставочный, — подсветку синхронизируем здесь.
+      els.root.classList.toggle('has-bet', els.betBox.checked);
+    }
+  }
+}
+
+// Переход на следующий раунд: чистим инпуты, ставки и «Принятый ответ».
 export function clearAll() {
   for (const els of rows.values()) {
     els.input.value = '';
+    els.betBox.checked = false;
+    els.root.classList.remove('has-bet');
     setAccepted(els, null);
     setStatus(els, null);
   }
 }
 
 // Восстановление после перезагрузки вкладки: строки «Принятый ответ»
-// заполняются тем, что реально лежит в базе.
+// и галочки ставок заполняются тем, что реально лежит в базе.
 export async function restoreAccepted() {
   if (!team.id) return;
   let res;
@@ -92,11 +132,23 @@ export async function restoreAccepted() {
   } catch {
     return; // нет связи — просто не восстановили, ничего не ломаем
   }
-  if (!res || res.ok !== true) return;
+  if (!res) return;
+
+  // Команда из прошлой игры или удалённая: страница должна отправить
+  // капитана выбирать заново, а не показывать пустые поля.
+  if (res.ok !== true) {
+    if (res.reason === 'other_game' || res.reason === 'unknown_team') onTeamRejected(res.reason);
+    return;
+  }
 
   for (let n = 1; n <= QUESTIONS; n++) {
+    const els = rows.get(n);
     const text = res.answers?.[String(n)];
-    if (text) setAccepted(rows.get(n), text);
+    if (text) setAccepted(els, text);
+
+    const bet = res.bets?.[String(n)] === true;
+    els.betBox.checked = bet;
+    els.root.classList.toggle('has-bet', bet && betMode);
   }
 }
 
@@ -128,8 +180,11 @@ async function send(n) {
       setStatus(els, {
         text: REASONS[res?.reason] ?? 'Не отправилось',
         kind: 'error',
-        retry: res?.reason !== 'closed',
+        retry: res?.reason !== 'closed' && res?.reason !== 'other_game',
       });
+      if (res?.reason === 'other_game' || res?.reason === 'unknown_team') {
+        onTeamRejected(res.reason);
+      }
       return;
     }
 
@@ -140,6 +195,55 @@ async function send(n) {
   } finally {
     els.button.classList.remove('is-loading');
     els.button.disabled = !formEnabled;
+  }
+}
+
+// Ставка уходит сразу по клику: отдельной кнопки «сохранить ставку» нет,
+// и галочка обязана означать то, что реально записано в базе. Поэтому
+// при отказе она возвращается в прежнее положение.
+async function sendBet(n) {
+  const els = rows.get(n);
+  if (!els) return;
+
+  const wanted = els.betBox.checked;
+
+  if (!team.id) {
+    els.betBox.checked = !wanted;
+    setStatus(els, { text: 'Сначала выберите команду', kind: 'error', retry: false });
+    return;
+  }
+
+  els.betBox.disabled = true;
+  els.root.classList.toggle('has-bet', wanted);
+
+  try {
+    const res = await setBet(team.id, n, wanted);
+
+    if (!res || res.ok !== true) {
+      els.betBox.checked = !wanted;
+      els.root.classList.toggle('has-bet', !wanted);
+      setStatus(els, {
+        text: REASONS[res?.reason] ?? 'Ставка не сохранилась',
+        kind: 'error',
+        retry: false,
+      });
+      if (res?.reason === 'other_game' || res?.reason === 'unknown_team') {
+        onTeamRejected(res.reason);
+      }
+      return;
+    }
+
+    setStatus(els, {
+      text: wanted ? 'Ставка принята' : 'Ставка снята',
+      kind: 'ok',
+      retry: false,
+    });
+  } catch {
+    els.betBox.checked = !wanted;
+    els.root.classList.toggle('has-bet', !wanted);
+    setStatus(els, { text: 'Нет связи — ставка не сохранилась', kind: 'error', retry: false });
+  } finally {
+    els.betBox.disabled = !formEnabled || !betMode;
   }
 }
 

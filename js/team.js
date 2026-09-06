@@ -12,6 +12,7 @@ const REASONS = {
   too_long: `Слишком длинное название (максимум ${TEAM_NAME_MAX} символов)`,
   name_taken: 'Такое название уже занято другой командой',
   unknown_team: 'Команда не найдена — выберите её из списка заново',
+  no_game: 'Игра ещё не началась — ведущий пока не выбрал её',
 };
 
 export const team = {
@@ -104,6 +105,22 @@ function forget() {
   localStorage.removeItem(LS_ID);
   localStorage.removeItem(LS_NAME);
   onChange(team);
+}
+
+// Команды привязаны к игре, поэтому сохранённая в телефоне команда
+// прошлой игры — обычное дело, а не сбой. База отвечает other_game
+// или просто не отдаёт строку (политика на teams показывает только
+// команды идущей игры), а страница отправляет капитана выбирать заново.
+export async function dropTeam(reason) {
+  forget();
+  await openEditor({ firstRun: true });
+  const el = document.getElementById('team-error');
+  if (el) {
+    el.textContent =
+      reason === 'other_game'
+        ? 'Началась другая игра — выберите или создайте команду заново'
+        : 'Команда больше не найдена — выберите или создайте её заново';
+  }
 }
 
 function renderView() {
