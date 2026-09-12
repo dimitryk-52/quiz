@@ -305,7 +305,7 @@ body {
 .team-input::placeholder, .q-input::placeholder { color: var(--muted); opacity: 1; }
 .team-input:focus, .q-input:focus {
   outline: none;
-  border-color: var(--accent);
+  border-color: var(--g-counter, var(--accent));
 }
 
 .btn {
@@ -319,7 +319,9 @@ body {
   font-weight: 700;
   line-height: 1;
   color: var(--accent-ink);
-  background: var(--accent);
+  /* Акцент игры — тот же, что у иконки отправки: ОК на экране команды
+     и есть отправка. Пока игра цвет не прислала, свой --accent. */
+  background: var(--g-timer, var(--accent));
   border: none;
   border-radius: 10px;
   padding: 0 18px;
@@ -373,7 +375,10 @@ body {
   max-width: 100%;
   overflow-wrap: anywhere;
 }
-.team-chip.is-current { border-color: var(--accent); color: var(--accent); }
+.team-chip.is-current {
+  border-color: var(--g-counter, var(--accent));
+  color: var(--g-counter, var(--accent));
+}
 .team-chip:active { background: var(--line); }
 
 /* --- Состояние страницы ---
