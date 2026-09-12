@@ -16,6 +16,34 @@ const link = document.getElementById('link-indicator');
 // перекрашивает страницу и читает эту переменную.
 let design = null;
 
+// Таблицы и константы оформления объявлены здесь, а не рядом со своими
+// функциями ниже, и по той же причине, что и design выше: initTheme()
+// на следующих строках перекрашивает страницу в первом же кадре, а
+// const до своей строки не существует — не «пустой», а недоступный.
+const SKIN_KEY = 'quiz.skin';
+const SKIN_RE = /^[a-z][a-z0-9-]{0,19}$/;
+
+const DESIGN_VERSION = 1;
+
+// Что игра вправе перекрасить. Список закрытый: он же документирует,
+// какие переменные оформление трогает, а какие остаются за страницей.
+const DESIGN_VARS = [
+  ['counter', '--g-counter'],
+  ['timer', '--g-timer'],
+  ['answer', '--g-answer'],
+  ['bg', '--bg'],
+  ['head', '--head'],
+  ['plate', '--card'],
+  ['well', '--card-2'],
+  ['stroke', '--plate-stroke'],
+  ['text', '--text'],
+  ['muted', '--muted'],
+  ['faint', '--faint'],
+  ['line', '--line'],
+];
+
+const HEX = /^#[0-9a-f]{6}$/i;
+
 initTheme();
 buildQuestions(document.getElementById('questions'));
 
@@ -130,9 +158,6 @@ function note(text, kind = '') {
 // в атрибут что попало из базы — лишний способ получить сюрприз
 // в селекторах. Стандартное оформление — это отсутствие атрибута.
 
-const SKIN_KEY = 'quiz.skin';
-const SKIN_RE = /^[a-z][a-z0-9-]{0,19}$/;
-
 function applySkin(next) {
   const clean = SKIN_RE.test(next ?? '') ? next : 'standard';
 
@@ -169,27 +194,6 @@ function applySkin(next) {
 //
 // Незнакомая версия формата не применяется вовсе. Телефон в зале
 // не должен показать половину палитры от формата, которого он не знает.
-
-const DESIGN_VERSION = 1;
-
-// Что игра вправе перекрасить. Список закрытый: он же документирует,
-// какие переменные оформление трогает, а какие остаются за страницей.
-const DESIGN_VARS = [
-  ['counter', '--g-counter'],
-  ['timer', '--g-timer'],
-  ['answer', '--g-answer'],
-  ['bg', '--bg'],
-  ['head', '--head'],
-  ['plate', '--card'],
-  ['well', '--card-2'],
-  ['stroke', '--plate-stroke'],
-  ['text', '--text'],
-  ['muted', '--muted'],
-  ['faint', '--faint'],
-  ['line', '--line'],
-];
-
-const HEX = /^#[0-9a-f]{6}$/i;
 
 function applyDesign(next) {
   design = next && Number(next.v) === DESIGN_VERSION ? next : null;
