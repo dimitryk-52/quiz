@@ -8,9 +8,13 @@ import { initRealtime, status } from './realtime.js';
 
 const roundLabel = document.getElementById('round-label');
 const roundNameEl = document.getElementById('round-name');
-const gameLabel = document.getElementById('game-label');
 const stateNote = document.getElementById('state-note');
 const link = document.getElementById('link-indicator');
+
+// Оформление идущей игры; null — игра его не прислала. Объявлено здесь,
+// а не рядом с applyDesign ниже: initTheme() на следующих строках уже
+// перекрашивает страницу и читает эту переменную.
+let design = null;
 
 initTheme();
 buildQuestions(document.getElementById('questions'));
@@ -69,6 +73,7 @@ function render() {
   // восстановленная из localStorage, и сбрасывать её на стандартную
   // ради полусекунды до ответа базы — это мигание на весь зал.
   if (status.known) applySkin(status.game?.theme);
+  if (status.known) applyDesign(status.game?.design ?? null);
 
   roundLabel.textContent = status.round ? `РАУНД ${status.round}` : 'РАУНД —';
   roundLabel.classList.toggle('is-bet', status.isBetRound === true);
@@ -79,11 +84,6 @@ function render() {
   roundNameEl.textContent = name;
   roundNameEl.hidden = !name;
   roundNameEl.classList.toggle('is-bet', status.isBetRound === true);
-
-  // Название игры под раундом: команды играют несколько квизов подряд
-  // с одного телефона, и «не тот квиз на экране» — реальный сценарий.
-  gameLabel.textContent = status.game?.title ?? '';
-  gameLabel.hidden = !status.game?.title;
 
   const ready = status.known && status.open && Boolean(team.id);
   setEnabled(ready);
@@ -156,6 +156,78 @@ function applySkin(next) {
   paintThemeColor();
 }
 
+// --- Оформление игры ----------------------------------------------
+//
+// Цвета приходят из games.design вместе с остальной конфигурацией
+// идущей игры — посчитанные, обеих тем сразу. Здесь их только
+// расставляют по переменным CSS: считать на телефоне нечего, а если
+// бы считали, двадцать телефонов в зале делали бы это каждый сам.
+//
+// Порядок такой: тема выбирается игроком, оформление приходит из базы,
+// и на экране должны оказаться цвета ВЫБРАННОЙ темы. Поэтому applyDesign
+// зовётся и при смене конфигурации, и при переключении темы.
+//
+// Незнакомая версия формата не применяется вовсе. Телефон в зале
+// не должен показать половину палитры от формата, которого он не знает.
+
+const DESIGN_VERSION = 1;
+
+// Что игра вправе перекрасить. Список закрытый: он же документирует,
+// какие переменные оформление трогает, а какие остаются за страницей.
+const DESIGN_VARS = [
+  ['counter', '--g-counter'],
+  ['timer', '--g-timer'],
+  ['answer', '--g-answer'],
+  ['bg', '--bg'],
+  ['head', '--head'],
+  ['plate', '--card'],
+  ['well', '--card-2'],
+  ['stroke', '--plate-stroke'],
+  ['text', '--text'],
+  ['muted', '--muted'],
+  ['faint', '--faint'],
+  ['line', '--line'],
+];
+
+const HEX = /^#[0-9a-f]{6}$/i;
+
+function applyDesign(next) {
+  design = next && Number(next.v) === DESIGN_VERSION ? next : null;
+  paintDesign();
+}
+
+function paintDesign() {
+  const root = document.documentElement;
+  const side = design?.[currentTheme()];
+
+  if (!side) {
+    root.removeAttribute('data-design');
+    for (const [, cssVar] of DESIGN_VARS) root.style.removeProperty(cssVar);
+    root.style.removeProperty('--plate-stroke-w');
+    root.style.removeProperty('--radius');
+    paintThemeColor();
+    return;
+  }
+
+  // Атрибут — переключатель для CSS: по нему включаются правила плашки
+  // (обводка вместо рамки, цветной акцент вместо стандартного).
+  root.dataset.design = 'game';
+
+  for (const [key, cssVar] of DESIGN_VARS) {
+    const v = side[key];
+    // Цвет проверяем здесь, а не доверяем базе: в переменную CSS уходит
+    // строка из сети, и мусор в ней тихо ломает не одно правило, а все,
+    // где переменная участвует.
+    if (HEX.test(v ?? '')) root.style.setProperty(cssVar, v);
+  }
+
+  const plate = design.plate ?? {};
+  if (Number.isFinite(plate.strokeW)) root.style.setProperty('--plate-stroke-w', plate.strokeW + 'px');
+  if (Number.isFinite(plate.radius)) root.style.setProperty('--radius', plate.radius + 'px');
+
+  paintThemeColor();
+}
+
 // --- Тема ---------------------------------------------------------
 // По умолчанию тёмная: играют в полутёмном зале. Выбор запоминается,
 // переключатель — в шапке рядом с индикатором связи.
@@ -187,7 +259,10 @@ function applyTheme(theme) {
   btn.textContent = theme === 'light' ? '☾' : '☀';
   btn.title = theme === 'light' ? 'Тёмная тема' : 'Светлая тема';
 
-  paintThemeColor();
+  // Оформление игры держит цвета обеих тем: перекрашиваем под новую,
+  // иначе на светлой остались бы тёмные цвета игры. paintDesign зовёт
+  // paintThemeColor сам — второй раз он не нужен.
+  paintDesign();
 }
 
 // Строка состояния браузера на телефоне. Цвет читаем из --bg: список

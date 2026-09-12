@@ -14,7 +14,7 @@ export const status = {
   open: false,
   known: false,
   // конфигурация идущей игры; null, пока не прочитана
-  game: null,        // { id, title, rounds, betRounds, roundNames, theme }
+  game: null,        // { id, title, rounds, betRounds, roundNames, theme, design }
   isBetRound: false,
   roundName: '',     // название идущего раунда, '' — если его нет
 };
@@ -123,6 +123,10 @@ export async function refreshStatus({ quiet = false } = {}) {
       roundNames: (data.game.round_names ?? []).map((v) => String(v ?? '')),
       // оформление страницы: у каждой игры своё, применяет app.js
       theme: String(data.game.theme ?? 'standard'),
+      // Цвета игры: посчитаны в хабе и отправлены оттуда же, здесь их
+      // только расставляют по переменным. null — обычное состояние:
+      // игра без оформления идёт на палитре страницы.
+      design: data.game.design ?? null,
     };
     apply(
       data.game.id,
