@@ -127,6 +127,9 @@ export async function refreshStatus({ quiet = false } = {}) {
       // только расставляют по переменным. null — обычное состояние:
       // игра без оформления идёт на палитре страницы.
       design: data.game.design ?? null,
+      // Подсказки к полям ответа: { "раунд": { "вопрос": "гр." } }.
+      // Всей игрой — событие о смене раунда несёт только номер.
+      hints: data.game.hints && typeof data.game.hints === 'object' ? data.game.hints : null,
     };
     apply(
       data.game.id,

@@ -302,7 +302,16 @@ body {
   border-radius: 10px;
   padding: 0 12px;
 }
-.team-input::placeholder, .q-input::placeholder { color: var(--muted); opacity: 1; }
+.team-input::placeholder { color: var(--muted); opacity: 1; }
+/* В поле ответа плейсхолдер — подсказка к вопросу («гр. или исп-ль»),
+   приходит с игрой (games.hints). Приглушена заметно сильнее обычного
+   текста: это пометка, а не ответ, и спутать её с набранным нельзя.
+   Первая строка — для браузеров без color-mix. */
+.q-input::placeholder {
+  color: var(--muted);
+  color: color-mix(in srgb, var(--muted) 55%, transparent);
+  opacity: 1;
+}
 .team-input:focus, .q-input:focus {
   outline: none;
   border-color: var(--g-counter, var(--accent));

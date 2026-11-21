@@ -2,7 +2,7 @@
 
 import { initTeam, restoreTeam, dropTeam, team } from './team.js';
 import {
-  buildQuestions, setEnabled, setBetMode, clearAll, restoreAccepted, onTeamGone,
+  buildQuestions, setEnabled, setBetMode, setHints, clearAll, restoreAccepted, onTeamGone,
 } from './answers.js';
 import { initRealtime, status } from './realtime.js';
 
@@ -112,6 +112,9 @@ function render() {
   roundNameEl.textContent = name;
   roundNameEl.hidden = !name;
   roundNameEl.classList.toggle('is-bet', status.isBetRound === true);
+
+  // Подсказки к полям — по идущему раунду; между раундами их нет.
+  setHints(status.round ? (status.game?.hints?.[String(status.round)] ?? null) : null);
 
   const ready = status.known && status.open && Boolean(team.id);
   setEnabled(ready);

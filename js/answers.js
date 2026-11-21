@@ -79,6 +79,17 @@ export function buildQuestions(container) {
   }
 }
 
+// Подсказки раунда — в плейсхолдеры полей: «гр. или исп-ль» вместо
+// «Ответ». map — { "вопрос": "подсказка" } или null; вопрос без подсказки
+// остаётся с «Ответ». Приглушены они стилем плейсхолдера (style.css).
+export function setHints(map) {
+  for (const [n, els] of rows) {
+    const hint = String(map?.[String(n)] ?? '').trim();
+    const text = hint || 'Ответ';
+    if (els.input.placeholder !== text) els.input.placeholder = text;
+  }
+}
+
 // Раунд открыт → поля активны; закрыт → всё disabled.
 // Класс is-locked гасит поля целиком: disabled-атрибут сам по себе
 // на телефоне читается плохо, и капитан не понимает, почему не печатается.
